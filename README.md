@@ -30,6 +30,8 @@
     </com.kot32.refresh.RefreshView>
     
 在Activity里：
+
+
     public class MainActivity extends AppCompatActivity implements RefreshView.IRefreshAction {
     
         private RefreshView mRefreshLayout;
