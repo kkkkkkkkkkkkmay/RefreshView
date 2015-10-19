@@ -104,9 +104,10 @@ public class RefreshView extends LinearLayout {
         //如果是ListView
         View view = getChildAt(1);
         if (view instanceof ListView) {
-            //如果ListView可见的第一个index是0，并且还没滑动
-            if (((ListView) view).getFirstVisiblePosition() == 0 && view.getScrollY() == 0) {
-                return true;
+            if (((ListView) view).getFirstVisiblePosition() == 0) {
+                View v = ((ListView) view).getChildAt(0);
+                if ((v == null)||(v != null && v.getTop() <= 0))
+                    return true;
             }
         }
         return false;
