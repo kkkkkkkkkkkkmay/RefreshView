@@ -8,9 +8,9 @@
 
 我自己实现的一个效果图：
 
-![将就看吧](http://i13.tietuku.com/8dcbcb41d4036227.gif)
+![将就看吧](http://i11.tietuku.com/02c5ac2cb45222fb.gif)
 
-图片地址：http://i13.tietuku.com/8dcbcb41d4036227.gif
+图片地址：http://i11.tietuku.com/02c5ac2cb45222fb.gif
 
 使用方法：
 
