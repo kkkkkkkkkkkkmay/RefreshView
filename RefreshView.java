@@ -10,7 +10,6 @@ import android.widget.RelativeLayout;
 import android.widget.Scroller;
 import android.widget.TextView;
 
-import com.kot32.refresh.util.DisplayUtil;
 
 /**
  * Created by kot32 on 15/10/18.
@@ -33,10 +32,14 @@ public class RefreshView extends LinearLayout {
     private RefreshViewHolder refreshViewHolder;
     //控制事务更新
     private IRefreshAction iRefreshAction;
+    //触摸事件传递接口
+    private onRefreshViewTouch onRefreshViewTouch;
     //默认高度
     private int HEADER_HEIGHT = 100;
 
     private int MAX_LIMIT_SOLT = 50;
+
+    private int totalLimit;
 
     public RefreshView(Context context) {
         super(context);
@@ -93,33 +96,62 @@ public class RefreshView extends LinearLayout {
                 text.setText("刷新成功");
             }
         };
+
+        totalLimit = DisplayUtil.dip2px(getContext(), HEADER_HEIGHT + MAX_LIMIT_SOLT);
     }
 
     private float preY;
     private float tmpY;
 
+
+    private float Y1;
+    private float Y2;
+
     //判断是否拦截事件
     @Override
     public boolean onInterceptTouchEvent(MotionEvent ev) {
-        //如果是ListView
-        View view = getChildAt(1);
-        if (view instanceof ListView) {
-            if (((ListView) view).getFirstVisiblePosition() == 0) {
-                View v = ((ListView) view).getChildAt(0);
-                if ((v == null)||(v != null && v.getTop() <= 0))
-                    return true;
-            }
+        //如果是方向向上，且ListView
+        switch (ev.getAction()) {
+            case MotionEvent.ACTION_DOWN:
+                Y1 = ev.getRawY();
+                preY = ev.getRawY();
+                tmpY = ev.getRawY();
+                break;
+            case MotionEvent.ACTION_MOVE:
+                Y2 = ev.getRawY();
+                if (Y2 > Y1) {
+                    View view = getChildAt(1);
+                    if (view instanceof ListView) {
+                        //如果ListView可见的第一个index是0，并且还没滑动
+                        if (((ListView) view).getFirstVisiblePosition() == 0) {
+                            View v = ((ListView) view).getChildAt(0);
+                            if ((v == null) || (v != null && v.getTop() <= 0))
+                                return true;
+                        }
+                    }
+                }
+
+                break;
         }
         return false;
 
     }
 
+
+    private boolean isTiping = false;
+
     @Override
     public boolean onTouchEvent(MotionEvent ev) {
+        if (onRefreshViewTouch != null) {
+            onRefreshViewTouch.onTouch((int) ev.getRawX(), (int) ev.getRawY());
+        }
+
         switch (ev.getAction()) {
             case MotionEvent.ACTION_DOWN:
                 preY = ev.getRawY();
                 tmpY = ev.getRawY();
+
+                isTiping = false;
 
                 if (refreshViewHolder != null) {
                     if (isRefreshing) break;
@@ -134,7 +166,11 @@ public class RefreshView extends LinearLayout {
 
                 if (dis >= DisplayUtil.dip2px(getContext(), HEADER_HEIGHT)) {
                     if (refreshViewHolder != null) {
-                        refreshViewHolder.willRefreshTips(headerView);
+                        if (!isTiping) {
+                            //提示只有一次
+                            refreshViewHolder.willRefreshTips(headerView);
+                            isTiping = true;
+                        }
                     }
                     shouldRefresh = true;
                 } else {
@@ -144,8 +180,11 @@ public class RefreshView extends LinearLayout {
                         refreshViewHolder.pullingTips(headerView, (int) (100 * ratio));
                 }
 
-                if (!(dis >= DisplayUtil.dip2px(getContext(), HEADER_HEIGHT + MAX_LIMIT_SOLT) || dis < 0)) {
+                if (dis >= 0 && (dis < totalLimit)) {
                     this.scrollBy(0, -(int) offsetY);
+                }
+                if (dis >= totalLimit) {
+                    this.scrollTo(0, -totalLimit);
                 }
 
                 tmpY = currentY;
@@ -172,6 +211,7 @@ public class RefreshView extends LinearLayout {
 
         return true;
     }
+
 
     private void startRefresh() {
         if (refreshViewHolder != null) {
@@ -220,6 +260,11 @@ public class RefreshView extends LinearLayout {
         void refresh();
 
         void refreshComplete();
+    }
+
+    //触摸点传递的接口，可供实现类扩展更多自定义动画
+    public interface onRefreshViewTouch {
+        void onTouch(int x, int y);
     }
 
 
@@ -293,7 +338,25 @@ public class RefreshView extends LinearLayout {
         this.iRefreshAction = iRefreshAction;
     }
 
+    public RefreshView.onRefreshViewTouch getOnRefreshViewTouch() {
+        return onRefreshViewTouch;
+    }
+
+    public void setOnRefreshViewTouch(RefreshView.onRefreshViewTouch onRefreshViewTouch) {
+        this.onRefreshViewTouch = onRefreshViewTouch;
+    }
+
     public void setHeaderHeight(int headerHeight) {
         this.HEADER_HEIGHT = headerHeight;
+        totalLimit = DisplayUtil.dip2px(getContext(), HEADER_HEIGHT + MAX_LIMIT_SOLT);
+    }
+
+    public int getMAX_LIMIT_SOLT() {
+        return MAX_LIMIT_SOLT;
+    }
+
+    public void setMAX_LIMIT_SOLT(int MAX_LIMIT_SOLT) {
+        this.MAX_LIMIT_SOLT = MAX_LIMIT_SOLT;
+        totalLimit = DisplayUtil.dip2px(getContext(), HEADER_HEIGHT + MAX_LIMIT_SOLT);
     }
 }
